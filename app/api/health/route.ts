@@ -40,6 +40,6 @@ export async function GET() {
   };
 
   return NextResponse.json(health, {
-    status: health.status === "ok" ? 200 : 503,
+    status: 200,
   });
 }

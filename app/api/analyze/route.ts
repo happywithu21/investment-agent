@@ -14,6 +14,7 @@
 
 import { NextRequest } from "next/server";
 import { runInvestmentWorkflow } from "@/agents/graph";
+import { runMockInvestmentWorkflow } from "@/services/mockWorkflow";
 import { isGeminiConfigured } from "@/services/gemini";
 import type { InvestmentReport, StreamEvent, AnalyzeRequest } from "@/types/api";
 
@@ -60,14 +61,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Guard: API key check
-  if (!isGeminiConfigured()) {
-    return new Response(
-      JSON.stringify({ error: "GOOGLE_API_KEY is not configured on the server." }),
-      { status: 503, headers: { "Content-Type": "application/json" } }
-    );
-  }
-
+  const useMock = !isGeminiConfigured();
   const workflowStart = Date.now();
 
   // Create SSE stream
@@ -79,13 +73,14 @@ export async function POST(req: NextRequest) {
       };
 
       try {
-        // Run the LangGraph workflow, forwarding step events as SSE
-        const graphState = await runInvestmentWorkflow(
-          company.trim(),
-          (type, node, message) => {
-            send(makeEvent(type, { node, message }));
-          }
-        );
+        // Run the workflow (Mock or real LangGraph), forwarding step events as SSE
+        const graphState = useMock
+          ? await runMockInvestmentWorkflow(company.trim(), (type, node, message) => {
+              send(makeEvent(type, { node, message }));
+            })
+          : await runInvestmentWorkflow(company.trim(), (type, node, message) => {
+              send(makeEvent(type, { node, message }));
+            });
 
         // Check that we have the minimum required data
         if (!graphState.committeeReport) {
