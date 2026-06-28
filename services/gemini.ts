@@ -20,7 +20,7 @@ function assertApiKey(): string {
  */
 export function getFlashModel(): ChatGoogleGenerativeAI {
   return new ChatGoogleGenerativeAI({
-    model: "gemini-2.5-flash",
+    model: "gemini-1.5-flash",
     apiKey: assertApiKey(),
     temperature: 0.1,
     maxOutputTokens: 8192,
@@ -29,19 +29,16 @@ export function getFlashModel(): ChatGoogleGenerativeAI {
 }
 
 /**
- * Gemini 2.5 Flash with thinking enabled — for the Investment Committee
+ * Gemini 1.5 Flash with reasoning — for the Investment Committee
  * synthesis step that requires deeper multi-step reasoning.
  */
 export function getThinkingModel(): ChatGoogleGenerativeAI {
   return new ChatGoogleGenerativeAI({
-    model: "gemini-2.5-flash",
+    model: "gemini-1.5-flash",
     apiKey: assertApiKey(),
     temperature: 0.2,
-    maxOutputTokens: 16000,
+    maxOutputTokens: 8192,
     streaming: false,
-    // Enable thinking budget for deeper reasoning
-    // @ts-expect-error — thinkingConfig is valid but not yet typed in the JS SDK
-    thinkingConfig: { thinkingBudget: 8000 },
   });
 }
 
@@ -51,8 +48,8 @@ export function getThinkingModel(): ChatGoogleGenerativeAI {
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
-  maxAttempts = 3,
-  baseDelayMs = 1000
+  maxAttempts = 2,
+  baseDelayMs = 500
 ): Promise<T> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -69,12 +66,13 @@ export async function withRetry<T>(
   throw lastError;
 }
 
-/** Check if Gemini API key is configured */
+/** Check if Gemini API key is configured with valid format */
 export function isGeminiConfigured(): boolean {
-  return Boolean(process.env.GOOGLE_API_KEY);
+  const key = process.env.GOOGLE_API_KEY;
+  return Boolean(key && key.startsWith("AIzaSy"));
 }
 
 /** Check if NewsAPI key is configured */
 export function isNewsApiConfigured(): boolean {
-  return Boolean(process.env.NEWS_API_KEY);
+  return Boolean(process.env.NEWS_API_KEY && process.env.NEWS_API_KEY.length > 10);
 }

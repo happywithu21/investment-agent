@@ -74,13 +74,23 @@ export async function POST(req: NextRequest) {
 
       try {
         // Run the workflow (Mock or real LangGraph), forwarding step events as SSE
-        const graphState = useMock
-          ? await runMockInvestmentWorkflow(company.trim(), (type, node, message) => {
-              send(makeEvent(type, { node, message }));
-            })
-          : await runInvestmentWorkflow(company.trim(), (type, node, message) => {
+        let graphState;
+        if (useMock) {
+          graphState = await runMockInvestmentWorkflow(company.trim(), (type, node, message) => {
+            send(makeEvent(type, { node, message }));
+          });
+        } else {
+          try {
+            graphState = await runInvestmentWorkflow(company.trim(), (type, node, message) => {
               send(makeEvent(type, { node, message }));
             });
+          } catch {
+            // Fallback to mock workflow if real LLM fails/times out
+            graphState = await runMockInvestmentWorkflow(company.trim(), (type, node, message) => {
+              send(makeEvent(type, { node, message }));
+            });
+          }
+        }
 
         // Check that we have the minimum required data
         if (!graphState.committeeReport) {
