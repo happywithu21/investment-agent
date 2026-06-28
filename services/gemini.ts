@@ -66,10 +66,10 @@ export async function withRetry<T>(
   throw lastError;
 }
 
-/** Check if Gemini API key is configured */
+/** Check if Gemini API key is configured with valid format */
 export function isGeminiConfigured(): boolean {
   const key = process.env.GOOGLE_API_KEY;
-  return Boolean(key && key.trim().length > 5);
+  return Boolean(key && key.trim().startsWith("AIzaSy"));
 }
 
 /** Check if NewsAPI key is configured */
